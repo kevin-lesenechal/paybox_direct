@@ -383,5 +383,5 @@ class PayboxDirect
   end
 end
 
-require_relative 'paybox_direct/request'
-require_relative 'paybox_direct/exceptions'
+require 'paybox_direct/request'
+require 'paybox_direct/exceptions'
