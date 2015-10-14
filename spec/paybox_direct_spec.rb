@@ -316,6 +316,66 @@ RSpec.describe PayboxDirect do
     end
   end
 
+  context "exceptions" do
+    it "raises exception on auth-only failure" do
+      stub_response "CODEREPONSE=00008&COMMENTAIRE=&NUMAPPEL=0000111111"
+
+      expect {
+        PayboxDirect.authorize(
+          ref:       "auth_only_failure",
+          amount:    14.29,
+          currency:  :EUR,
+          cc_number: CC_NUMBER,
+          cc_expire: CC_EXPIRE,
+          cc_cvv:    CC_CVV
+        )
+      }.to raise_error(PayboxDirect::AuthorizationError) do |e|
+        expect(e.request_id).to eq 111111
+        expect(e.code).to eq 8
+        expect(e.comment).to be_a String
+        expect(e.request).to be_a PayboxDirect::Request
+      end
+    end
+
+    it "raises exception on debit failure" do
+      stub_response "CODEREPONSE=00008&COMMENTAIRE=&NUMAPPEL=0000111111"
+
+      expect {
+        PayboxDirect.debit(
+          ref:       "debit_failure",
+          amount:    50.3,
+          currency:  :EUR,
+          cc_number: CC_NUMBER,
+          cc_expire: CC_EXPIRE,
+          cc_cvv:    CC_CVV
+        )
+      }.to raise_error(PayboxDirect::AuthorizationError) do |e|
+        expect(e.request_id).to eq 111111
+        expect(e.code).to eq 8
+        expect(e.comment).to be_a String
+        expect(e.request).to be_a PayboxDirect::Request
+      end
+    end
+
+    it "raises exception on debit failure on prior auth-only" do
+      stub_response "CODEREPONSE=00008&COMMENTAIRE=&NUMAPPEL=0000111111"
+
+      expect {
+        PayboxDirect.debit_authorization(
+          amount:         18.20,
+          currency:       :EUR,
+          request_id:     111111,
+          transaction_id: 2222222
+        )
+      }.to raise_error(PayboxDirect::DebitError) do |e|
+        expect(e.request_id).to eq 111111
+        expect(e.code).to eq 8
+        expect(e.comment).to be_a String
+        expect(e.request).to be_a PayboxDirect::Request
+      end
+    end
+  end
+
   it "should cancel an operation" do
     stub_response "CODEREPONSE=00000&COMMENTAIRE=" if !DO_CALLS
 

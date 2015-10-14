@@ -107,7 +107,7 @@ module PayboxDirect
     req.execute!
 
     if req.failed?
-      raise AuthorizationError.new(req.error_code, req.error_comment)
+      raise AuthorizationError.new(req)
     end
     req.response = {
       transaction_id: req.fields["NUMTRANS"].to_i,
@@ -175,7 +175,7 @@ module PayboxDirect
     req.execute!
 
     if req.failed?
-      raise DebitError.new(req.error_code, req.error_comment)
+      raise DebitError.new(req)
     end
     return req
   end
@@ -243,7 +243,7 @@ module PayboxDirect
     req.execute!
 
     if req.failed?
-      raise CancelError.new(req.error_code, req.error_comment)
+      raise CancelError.new(req)
     end
     return req
   end
@@ -285,7 +285,7 @@ module PayboxDirect
     req.execute!
 
     if req.failed?
-      raise RefundError.new(req.error_code, req.error_comment)
+      raise RefundError.new(req)
     end
     return req
   end
@@ -348,7 +348,7 @@ module PayboxDirect
     req.execute!
 
     if req.failed?
-      raise CreditError.new(req.error_code, req.error_comment)
+      raise CreditError.new(req)
     end
     return req
   end
@@ -375,7 +375,7 @@ module PayboxDirect
     })
     req.execute!
     if req.failed?
-      raise DeleteSubscriberError.new(req.error_code, req.error_comment)
+      raise DeleteSubscriberError.new(req)
     end
     return req
   end
