@@ -42,11 +42,11 @@ RSpec.describe PayboxDirect do
       })
 
       if DO_CALLS
-        expect(req.response[:request_id]).to be_a Fixnum
+        expect(req.request_id).to be_a Fixnum
         expect(req.response[:transaction_id]).to be_a Fixnum
         expect(req.response[:authorization]).to be_nil
       else
-        expect(req.response[:request_id]).to eq 111111
+        expect(req.request_id).to eq 111111
         expect(req.response[:transaction_id]).to eq 2222222
         expect(req.response[:authorization]).to eq 444444
       end
@@ -77,12 +77,12 @@ RSpec.describe PayboxDirect do
       })
 
       if DO_CALLS
-        expect(req.response[:request_id]).to be_a Fixnum
+        expect(req.request_id).to be_a Fixnum
         expect(req.response[:transaction_id]).to be_a Fixnum
         expect(req.response[:authorization]).to be_nil
         expect(req.response[:wallet]).to eq "CMDLpStLLLs"
       else
-        expect(req.response[:request_id]).to eq 111111
+        expect(req.request_id).to eq 111111
         expect(req.response[:transaction_id]).to eq 2222222
         expect(req.response[:authorization]).to eq 444444
         expect(req.response[:wallet]).to eq "my_wallet_code"
@@ -129,11 +129,11 @@ RSpec.describe PayboxDirect do
       })
 
       if DO_CALLS
-        expect(req.response[:request_id]).to be_a Fixnum
+        expect(req.request_id).to be_a Fixnum
         expect(req.response[:transaction_id]).to be_a Fixnum
         expect(req.response[:authorization]).to be_nil
       else
-        expect(req.response[:request_id]).to eq 111111
+        expect(req.request_id).to eq 111111
         expect(req.response[:transaction_id]).to eq 2222222
         expect(req.response[:authorization]).to eq 444444
       end
@@ -162,11 +162,11 @@ RSpec.describe PayboxDirect do
       })
 
       if DO_CALLS
-        expect(req.response[:request_id]).to be_a Fixnum
+        expect(req.request_id).to be_a Fixnum
         expect(req.response[:transaction_id]).to be_a Fixnum
         expect(req.response[:authorization]).to be_nil
       else
-        expect(req.response[:request_id]).to eq 111111
+        expect(req.request_id).to eq 111111
         expect(req.response[:transaction_id]).to eq 2222222
         expect(req.response[:authorization]).to eq 444444
       end
@@ -218,12 +218,12 @@ RSpec.describe PayboxDirect do
       })
 
       if DO_CALLS
-        expect(req.response[:request_id]).to be_a Fixnum
+        expect(req.request_id).to be_a Fixnum
         expect(req.response[:transaction_id]).to be_a Fixnum
         expect(req.response[:authorization]).to be_nil
         expect(req.response[:wallet]).to eq "CMDLpStLLLs"
       else
-        expect(req.response[:request_id]).to eq 111111
+        expect(req.request_id).to eq 111111
         expect(req.response[:transaction_id]).to eq 2222222
         expect(req.response[:authorization]).to eq 444444
         expect(req.response[:wallet]).to eq "my_wallet_code"
@@ -270,11 +270,11 @@ RSpec.describe PayboxDirect do
       })
 
       if DO_CALLS
-        expect(req.response[:request_id]).to be_a Fixnum
+        expect(req.request_id).to be_a Fixnum
         expect(req.response[:transaction_id]).to be_a Fixnum
         expect(req.response[:authorization]).to be_nil
       else
-        expect(req.response[:request_id]).to eq 111111
+        expect(req.request_id).to eq 111111
         expect(req.response[:transaction_id]).to eq 2222222
         expect(req.response[:authorization]).to eq 444444
       end
@@ -292,7 +292,7 @@ RSpec.describe PayboxDirect do
           cc_expire:  CC_EXPIRE,
           cc_cvv:     CC_CVV
         )
-        req_id = req.response[:request_id]
+        req_id = req.request_id
         trans_id = req.response[:transaction_id]
       else
         req_id = 111111
@@ -328,7 +328,7 @@ RSpec.describe PayboxDirect do
         cc_expire:  CC_EXPIRE,
         cc_cvv:     CC_CVV
       )
-      req_id = req.response[:request_id]
+      req_id = req.request_id
       trans_id = req.response[:transaction_id]
     else
       req_id = 111111

@@ -63,6 +63,11 @@ class PayboxDirect::Request
     return @fields["CODEREPONSE"] != "00000"
   end
 
+  def request_id
+    raise "Not executed yet" if @fields.nil?
+    return @fields["NUMAPPEL"].to_i
+  end
+
   def error_code
     raise "Not executed yet" if @fields.nil?
     return @fields["CODEREPONSE"].to_i

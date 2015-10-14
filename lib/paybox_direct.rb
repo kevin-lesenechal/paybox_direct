@@ -59,7 +59,6 @@ module PayboxDirect
   #
   # == Returns: (PayboxDirect::Request)
   # The Paybox request with these response variables:
-  # * request_id:     The Paybox request ID (NUMAPPEL)
   # * transaction_id: The Paybox transaction ID (NUMTRANS)
   # * wallet:         (if new subscription) The created wallet code (PORTEUR)
   #
@@ -111,7 +110,6 @@ module PayboxDirect
       raise AuthorizationError.new(req.error_code, req.error_comment)
     end
     req.response = {
-      request_id:     req.fields["NUMAPPEL"].to_i,
       transaction_id: req.fields["NUMTRANS"].to_i,
       authorization:  req.fields["AUTORISATION"] == "XXXXXX" ? nil : req.fields["AUTORISATION"].to_i
     }
@@ -124,7 +122,7 @@ module PayboxDirect
         debit_authorization(
           amount:         opts[:amount],
           currency:       opts[:currency],
-          request_id:     req.response[:request_id],
+          request_id:     req.request_id,
           transaction_id: req.response[:transaction_id]
         )
       end
