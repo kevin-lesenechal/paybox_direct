@@ -3,7 +3,7 @@
 # This library is licensed under the new BSD license. Checkout the license text
 # in the LICENSE file or online at <http://opensource.org/licenses/BSD-3-Clause>.
 
-class PayboxDirect
+module PayboxDirect
   class PayboxRequestError < StandardError
     attr_reader :code, :comment
 
