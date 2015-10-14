@@ -350,6 +350,8 @@ module PayboxDirect
     if req.failed?
       raise CreditError.new(req)
     end
+
+    req.response[:transaction_id] = req.fields["NUMTRANS"].to_i
     return req
   end
 
