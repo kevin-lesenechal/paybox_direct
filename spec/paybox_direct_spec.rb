@@ -435,4 +435,83 @@ RSpec.describe PayboxDirect do
       "NUMTRANS"  => "0002222222"
     })
   end
+
+  it "credits a card without subscription" do
+    stub_response "CODEREPONSE=00000&COMMENTAIRE=&NUMAPPEL=0000111111&NUMTRANS=0002222222" if !DO_CALLS
+
+    req = PayboxDirect.credit(
+      ref:       "credit",
+      amount:    38.4,
+      currency:  :EUR,
+      cc_number: CC_NUMBER,
+      cc_expire: CC_EXPIRE,
+      cc_cvv:    CC_CVV
+    )
+
+    expect(req.vars).to include({
+      "TYPE"      => "00004",
+      "REFERENCE" => REF_PREFIX + "credit",
+      "MONTANT"   => "0000003840",
+      "DEVISE"    => "978",
+      "PORTEUR"   => CC_NUMBER.gsub("-", ""),
+      "DATEVAL"   => CC_EXPIRE.strftime("%m%y"),
+      "CVV"       => CC_CVV
+    })
+
+    if DO_CALLS
+      expect(req.request_id).to be_a Fixnum
+      expect(req.response[:transaction_id]).to be_a Fixnum
+    else
+      expect(req.request_id).to eq 111111
+      expect(req.response[:transaction_id]).to eq 2222222
+    end
+  end
+
+  it "credits a subscriber" do
+    stub_response "CODEREPONSE=00000&COMMENTAIRE=&NUMAPPEL=0000111111&NUMTRANS=0002222222" if !DO_CALLS
+
+    if DO_CALLS
+      req = PayboxDirect.debit(
+        ref:        "credit_subscriber_create",
+        amount:     1,
+        currency:   :EUR,
+        cc_number:  CC_NUMBER,
+        cc_expire:  CC_EXPIRE,
+        cc_cvv:     CC_CVV,
+        subscriber: "my_sub_id6"
+      )
+      wallet = req.response[:wallet]
+    else
+      wallet = "my_wallet_code"
+    end
+
+    req = PayboxDirect.credit(
+      ref:        "credit_subscriber",
+      amount:     29,
+      currency:   :EUR,
+      wallet:     wallet,
+      cc_expire:  CC_EXPIRE,
+      cc_cvv:     CC_CVV,
+      subscriber: "my_sub_id6"
+    )
+
+    expect(req.vars).to include({
+      "TYPE"      => "00054",
+      "REFERENCE" => REF_PREFIX + "credit_subscriber",
+      "MONTANT"   => "0000002900",
+      "DEVISE"    => "978",
+      "PORTEUR"   => wallet,
+      "DATEVAL"   => CC_EXPIRE.strftime("%m%y"),
+      "CVV"       => CC_CVV,
+      "REFABONNE" => REF_PREFIX + "my_sub_id6"
+    })
+
+    if DO_CALLS
+      expect(req.request_id).to be_a Fixnum
+      expect(req.response[:transaction_id]).to be_a Fixnum
+    else
+      expect(req.request_id).to eq 111111
+      expect(req.response[:transaction_id]).to eq 2222222
+    end
+  end
 end
