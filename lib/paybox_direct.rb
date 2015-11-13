@@ -65,43 +65,44 @@ module PayboxDirect
   # == Raises:
   # * PayboxDirect::AuthorizationError, if authorization fails
   # * PayboxDirect::ServerUnavailableError, if Paybox server is unavailable
-  def self.authorize(opts)
-    raise ArgumentError, "Expecting hash" unless opts.is_a? Hash
-    raise ArgumentError, "Expecting `amount` option" unless opts.has_key? :amount
-    raise ArgumentError, "Expecting `currency` option" unless opts.has_key? :currency
-    raise ArgumentError, "Expecting `ref` option" unless opts.has_key? :ref
-    raise ArgumentError, "Expecting `cc_expire` option" unless opts.has_key? :cc_expire
-    raise ArgumentError, "Expecting `cc_cvv` option" unless opts.has_key? :cc_cvv
-    raise ArgumentError, "amount: Expecting Numeric" unless opts[:amount].is_a? Numeric
-    raise ArgumentError, "currency: Not supported" unless CURRENCIES.has_key? opts[:currency]
-    raise ArgumentError, "cc_expire: Expecting Date" unless opts[:cc_expire].is_a? Date
-    opts[:debit] = false if !opts.has_key? :debit
+  def self.authorize(amount:,
+                     currency:,
+                     ref:,
+                     cc_number: nil,
+                     wallet: nil,
+                     cc_expire:,
+                     cc_cvv:,
+                     subscriber: nil,
+                     debit: false)
+    raise ArgumentError, "amount: Expecting Numeric" unless amount.is_a? Numeric
+    raise ArgumentError, "currency: Not supported" unless CURRENCIES.has_key? currency
+    raise ArgumentError, "cc_expire: Expecting Date" unless cc_expire.is_a? Date
 
-    if opts.has_key? :subscriber
-      if opts.has_key? :wallet
-        raise ArgumentError, "cc_number: Unexpected when `wallet` provided" if opts.has_key? :cc_number
-        op_code = opts[:debit] ? 53 : 51
+    if !subscriber.nil?
+      if !wallet.nil?
+        raise ArgumentError, "cc_number: Unexpected when `wallet` provided" unless cc_number.nil?
+        op_code = debit ? 53 : 51
       else
-        raise ArgumentError, "Expecting `cc_number` option" unless opts.has_key? :cc_number
+        raise ArgumentError, "Expecting `cc_number` option" if cc_number.nil?
         op_code = 56 # Paybox can't create a new subscriber with immediate debit
       end
     else
-      raise ArgumentError, "Expecting `cc_number` option" unless opts.has_key? :cc_number
-      raise ArgumentError, "Unexpected `wallet` option" if opts.has_key? :wallet
-      op_code = opts[:debit] ? 3 : 1
+      raise ArgumentError, "Expecting `cc_number` option" if cc_number.nil?
+      raise ArgumentError, "Unexpected `wallet` option" unless wallet.nil?
+      op_code = debit ? 3 : 1
     end
 
     vars = {
       "TYPE"      => op_code.to_s.rjust(5, "0"),
-      "REFERENCE" => @@config.ref_prefix + opts[:ref],
-      "MONTANT"   => (opts[:amount].round(2) * 100).round.to_s.rjust(10, "0"),
-      "DEVISE"    => CURRENCIES[opts[:currency]].to_s.rjust(3, "0"),
-      "PORTEUR"   => opts.has_key?(:wallet) ? opts[:wallet] : opts[:cc_number].gsub(/[ -.]/, ""),
-      "DATEVAL"   => opts[:cc_expire].strftime("%m%y"),
-      "CVV"       => opts[:cc_cvv]
+      "REFERENCE" => @@config.ref_prefix + ref,
+      "MONTANT"   => (amount.round(2) * 100).round.to_s.rjust(10, "0"),
+      "DEVISE"    => CURRENCIES[currency].to_s.rjust(3, "0"),
+      "PORTEUR"   => !wallet.nil? ? wallet : cc_number.gsub(/[ -.]/, ""),
+      "DATEVAL"   => cc_expire.strftime("%m%y"),
+      "CVV"       => cc_cvv
     }
-    if opts.has_key? :subscriber
-      vars["REFABONNE"] = @@config.ref_prefix + opts[:subscriber]
+    if !subscriber.nil?
+      vars["REFABONNE"] = @@config.ref_prefix + subscriber
     end
     req = Request.new(vars)
     req.execute!
@@ -117,11 +118,11 @@ module PayboxDirect
       req.response[:wallet] = req.fields["PORTEUR"]
 
       # We now execute debit after authorization-only operation #56
-      if opts[:debit]
+      if debit
         sleep 1 # Paybox recommends to wait a few seconds between the authorization and the debit
         debit_authorization(
-          amount:         opts[:amount],
-          currency:       opts[:currency],
+          amount:         amount,
+          currency:       currency,
           request_id:     req.request_id,
           transaction_id: req.response[:transaction_id]
         )
@@ -154,23 +155,21 @@ module PayboxDirect
   # == Raises:
   # * PayboxDirect::DebitError, if debit fails
   # * PayboxDirect::ServerUnavailableError, if Paybox server is unavailable
-  def self.debit_authorization(opts)
-    raise ArgumentError, "Expecting hash" unless opts.is_a? Hash
-    raise ArgumentError, "Expecting `amount` option" unless opts.has_key? :amount
-    raise ArgumentError, "Expecting `currency` option" unless opts.has_key? :currency
-    raise ArgumentError, "Expecting `request_id` option" unless opts.has_key? :request_id
-    raise ArgumentError, "Expecting `transaction_id` option" unless opts.has_key? :transaction_id
-    raise ArgumentError, "amount: Expecting Numeric" unless opts[:amount].is_a? Numeric
-    raise ArgumentError, "currency: Not supported" unless CURRENCIES.has_key? opts[:currency]
-    raise ArgumentError, "request_id: Expecting Fixnum" unless opts[:request_id].is_a? Fixnum
-    raise ArgumentError, "transaction_id: Expecting Fixnum" unless opts[:transaction_id].is_a? Fixnum
+  def self.debit_authorization(amount:,
+                               currency:,
+                               request_id:,
+                               transaction_id:)
+    raise ArgumentError, "amount: Expecting Numeric" unless amount.is_a? Numeric
+    raise ArgumentError, "currency: Not supported" unless CURRENCIES.has_key? currency
+    raise ArgumentError, "request_id: Expecting Fixnum" unless request_id.is_a? Fixnum
+    raise ArgumentError, "transaction_id: Expecting Fixnum" unless transaction_id.is_a? Fixnum
 
     req = Request.new({
       "TYPE"     => "00002",
-      "MONTANT"  => (opts[:amount].round(2) * 100).round.to_s.rjust(10, "0"),
-      "DEVISE"   => CURRENCIES[opts[:currency]].to_s.rjust(3, "0"),
-      "NUMAPPEL" => opts[:request_id].to_s.rjust(10, "0"),
-      "NUMTRANS" => opts[:transaction_id].to_s.rjust(10, "0")
+      "MONTANT"  => (amount.round(2) * 100).round.to_s.rjust(10, "0"),
+      "DEVISE"   => CURRENCIES[currency].to_s.rjust(3, "0"),
+      "NUMAPPEL" => request_id.to_s.rjust(10, "0"),
+      "NUMTRANS" => transaction_id.to_s.rjust(10, "0")
     })
     req.execute!
 
@@ -202,42 +201,43 @@ module PayboxDirect
   # == Raises:
   # * PayboxDirect::CancelError, if cancellation fails
   # * PayboxDirect::ServerUnavailableError, if Paybox server is unavailable
-  def self.cancel(opts)
-    raise ArgumentError, "Expecting hash" unless opts.is_a? Hash
-    raise ArgumentError, "Expecting `amount` option" unless opts.has_key? :amount
-    raise ArgumentError, "Expecting `currency` option" unless opts.has_key? :currency
-    raise ArgumentError, "Expecting `ref` option" unless opts.has_key? :ref
-    raise ArgumentError, "Expecting `cc_cvv` option" unless opts.has_key? :cc_cvv
-    raise ArgumentError, "Expecting `request_id` option" unless opts.has_key? :request_id
-    raise ArgumentError, "Expecting `transaction_id` option" unless opts.has_key? :transaction_id
-    raise ArgumentError, "amount: Expecting Numeric" unless opts[:amount].is_a? Numeric
-    raise ArgumentError, "currency: Not supported" unless CURRENCIES.has_key? opts[:currency]
-    raise ArgumentError, "cc_expire: Expecting Date" unless opts[:cc_expire].is_a? Date
-    raise ArgumentError, "request_id: Expecting Numeric" unless opts[:request_id].is_a? Numeric
-    raise ArgumentError, "transaction_id: Expecting Numeric" unless opts[:transaction_id].is_a? Numeric
+  def self.cancel(amount:,
+                  currency:,
+                  ref:,
+                  wallet: nil,
+                  cc_expire: nil,
+                  cc_cvv:,
+                  subscriber: nil,
+                  request_id:,
+                  transaction_id:)
+    raise ArgumentError, "amount: Expecting Numeric" unless amount.is_a? Numeric
+    raise ArgumentError, "currency: Not supported" unless CURRENCIES.has_key? currency
+    raise ArgumentError, "cc_expire: Expecting Date" unless cc_expire.is_a? Date
+    raise ArgumentError, "request_id: Expecting Numeric" unless request_id.is_a? Numeric
+    raise ArgumentError, "transaction_id: Expecting Numeric" unless transaction_id.is_a? Numeric
 
-    if opts.has_key? :subscriber
-      raise ArgumentError, "Expecting `wallet` option" unless opts.has_key? :wallet
-      raise ArgumentError, "Expecting `cc_expire` option" unless opts.has_key? :cc_expire
+    if !subscriber.nil?
+      raise ArgumentError, "Expecting `wallet` option" if wallet.nil?
+      raise ArgumentError, "Expecting `cc_expire` option" if cc_expire.nil?
       op_code = 55
     else
-      raise ArgumentError, "Unexpected `wallet` option" if opts.has_key? :wallet
+      raise ArgumentError, "Unexpected `wallet` option" unless wallet.nil?
       op_code = 5
     end
 
     vars = {
       "TYPE"      => op_code.to_s.rjust(5, "0"),
-      "REFERENCE" => @@config.ref_prefix + opts[:ref],
-      "MONTANT"   => (opts[:amount].round(2) * 100).round.to_s.rjust(10, "0"),
-      "DEVISE"    => CURRENCIES[opts[:currency]].to_s.rjust(3, "0"),
-      "DATEVAL"   => opts[:cc_expire].strftime("%m%y"),
-      "CVV"       => opts[:cc_cvv],
-      "NUMAPPEL"  => opts[:request_id].to_s.rjust(10, "0"),
-      "NUMTRANS"  => opts[:transaction_id].to_s.rjust(10, "0")
+      "REFERENCE" => @@config.ref_prefix + ref,
+      "MONTANT"   => (amount.round(2) * 100).round.to_s.rjust(10, "0"),
+      "DEVISE"    => CURRENCIES[currency].to_s.rjust(3, "0"),
+      "DATEVAL"   => cc_expire.strftime("%m%y"),
+      "CVV"       => cc_cvv,
+      "NUMAPPEL"  => request_id.to_s.rjust(10, "0"),
+      "NUMTRANS"  => transaction_id.to_s.rjust(10, "0")
     }
-    if opts.has_key? :subscriber
-      vars["PORTEUR"]   = opts[:wallet]
-      vars["REFABONNE"] = @@config.ref_prefix + opts[:subscriber]
+    if !subscriber.nil?
+      vars["PORTEUR"]   = wallet
+      vars["REFABONNE"] = @@config.ref_prefix + subscriber
     end
     req = Request.new(vars)
     req.execute!
@@ -264,23 +264,21 @@ module PayboxDirect
   # == Raises:
   # * PayboxDirect::RefundError, if cancellation fails
   # * PayboxDirect::ServerUnavailableError, if Paybox server is unavailable
-  def self.refund(opts)
-    raise ArgumentError, "Expecting hash" unless opts.is_a? Hash
-    raise ArgumentError, "Expecting `amount` option" unless opts.has_key? :amount
-    raise ArgumentError, "Expecting `currency` option" unless opts.has_key? :currency
-    raise ArgumentError, "Expecting `request_id` option" unless opts.has_key? :request_id
-    raise ArgumentError, "Expecting `transaction_id` option" unless opts.has_key? :transaction_id
-    raise ArgumentError, "amount: Expecting Numeric" unless opts[:amount].is_a? Numeric
-    raise ArgumentError, "currency: Not supported" unless CURRENCIES.has_key? opts[:currency]
-    raise ArgumentError, "request_id: Expecting Numeric" unless opts[:request_id].is_a? Numeric
-    raise ArgumentError, "transaction_id: Expecting Numeric" unless opts[:transaction_id].is_a? Numeric
+  def self.refund(amount:,
+                  currency:,
+                  request_id:,
+                  transaction_id:)
+    raise ArgumentError, "amount: Expecting Numeric" unless amount.is_a? Numeric
+    raise ArgumentError, "currency: Not supported" unless CURRENCIES.has_key? currency
+    raise ArgumentError, "request_id: Expecting Numeric" unless request_id.is_a? Numeric
+    raise ArgumentError, "transaction_id: Expecting Numeric" unless transaction_id.is_a? Numeric
 
     req = Request.new({
       "TYPE"     => "00014",
-      "MONTANT"  => (opts[:amount].round(2) * 100).round.to_s.rjust(10, "0"),
-      "DEVISE"   => CURRENCIES[opts[:currency]].to_s.rjust(3, "0"),
-      "NUMAPPEL" => opts[:request_id].to_s.rjust(10, "0"),
-      "NUMTRANS" => opts[:transaction_id].to_s.rjust(10, "0")
+      "MONTANT"  => (amount.round(2) * 100).round.to_s.rjust(10, "0"),
+      "DEVISE"   => CURRENCIES[currency].to_s.rjust(3, "0"),
+      "NUMAPPEL" => request_id.to_s.rjust(10, "0"),
+      "NUMTRANS" => transaction_id.to_s.rjust(10, "0")
     })
     req.execute!
 
@@ -311,38 +309,39 @@ module PayboxDirect
   # == Raises:
   # * PayboxDirect::CreditError, if credit fails
   # * PayboxDirect::ServerUnavailableError, if Paybox server is unavailable
-  def self.credit(opts)
-    raise ArgumentError, "Expecting hash" unless opts.is_a? Hash
-    raise ArgumentError, "Expecting `amount` option" unless opts.has_key? :amount
-    raise ArgumentError, "Expecting `currency` option" unless opts.has_key? :currency
-    raise ArgumentError, "Expecting `ref` option" unless opts.has_key? :ref
-    raise ArgumentError, "Expecting `cc_expire` option" unless opts.has_key? :cc_expire
-    raise ArgumentError, "Expecting `cc_cvv` option" unless opts.has_key? :cc_cvv
-    raise ArgumentError, "amount: Expecting Numeric" unless opts[:amount].is_a? Numeric
-    raise ArgumentError, "currency: Not supported" unless CURRENCIES.has_key? opts[:currency]
-    raise ArgumentError, "cc_expire: Expecting Date" unless opts[:cc_expire].is_a? Date
+  def self.credit(amount:,
+                  currency:,
+                  ref:,
+                  cc_number: nil,
+                  wallet: nil,
+                  cc_expire:,
+                  cc_cvv:,
+                  subscriber: nil)
+    raise ArgumentError, "amount: Expecting Numeric" unless amount.is_a? Numeric
+    raise ArgumentError, "currency: Not supported" unless CURRENCIES.has_key? currency
+    raise ArgumentError, "cc_expire: Expecting Date" unless cc_expire.is_a? Date
 
-    if opts.has_key? :subscriber
-      raise ArgumentError, "Expecting `wallet` option" unless opts.has_key? :wallet
-      raise ArgumentError, "cc_number: Unexpected when `wallet` provided" if opts.has_key? :cc_number
+    if !subscriber.nil?
+      raise ArgumentError, "Expecting `wallet` option" if wallet.nil?
+      raise ArgumentError, "cc_number: Unexpected when `wallet` provided" unless cc_number.nil?
       op_code = 54
     else
-      raise ArgumentError, "Expecting `cc_number` option" unless opts.has_key? :cc_number
-      raise ArgumentError, "Unexpected `wallet` option" if opts.has_key? :wallet
+      raise ArgumentError, "Expecting `cc_number` option" if cc_number.nil?
+      raise ArgumentError, "Unexpected `wallet` option" unless wallet.nil?
       op_code = 4
     end
 
     vars = {
       "TYPE"      => op_code.to_s.rjust(5, "0"),
-      "REFERENCE" => @@config.ref_prefix + opts[:ref],
-      "MONTANT"   => (opts[:amount].round(2) * 100).round.to_s.rjust(10, "0"),
-      "DEVISE"    => CURRENCIES[opts[:currency]].to_s.rjust(3, "0"),
-      "PORTEUR"   => opts.has_key?(:wallet) ? opts[:wallet] : opts[:cc_number].gsub(/[ -.]/, ""),
-      "DATEVAL"   => opts[:cc_expire].strftime("%m%y"),
-      "CVV"       => opts[:cc_cvv]
+      "REFERENCE" => @@config.ref_prefix + ref,
+      "MONTANT"   => (amount.round(2) * 100).round.to_s.rjust(10, "0"),
+      "DEVISE"    => CURRENCIES[currency].to_s.rjust(3, "0"),
+      "PORTEUR"   => !wallet.nil? ? wallet : cc_number.gsub(/[ -.]/, ""),
+      "DATEVAL"   => cc_expire.strftime("%m%y"),
+      "CVV"       => cc_cvv
     }
-    if opts.has_key? :subscriber
-      vars["REFABONNE"] = @@config.ref_prefix + opts[:subscriber]
+    if !subscriber.nil?
+      vars["REFABONNE"] = @@config.ref_prefix + subscriber
     end
     req = Request.new(vars)
     req.execute!
