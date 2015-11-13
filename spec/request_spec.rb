@@ -67,7 +67,7 @@ RSpec.describe PayboxDirect::Request do
     dev_uri = URI(PayboxDirect::DEV_URL)
 
     req = PayboxDirect::Request.new("VAR1" => "VAL1", "VAR2" => "VAL2")
-    expect(req).to receive(:run_http_post!).with(dev_uri).and_raise(SocketError)
+    expect_any_instance_of(Net::HTTP).to receive(:request).and_raise(SocketError)
     expect {
       req.execute!
     }.to raise_error(PayboxDirect::ServerUnavailableError)
@@ -82,7 +82,7 @@ RSpec.describe PayboxDirect::Request do
     prod_fallback_uri = URI(PayboxDirect::PROD_FALLBACK_URL)
 
     req = PayboxDirect::Request.new("VAR1" => "VAL1", "VAR2" => "VAL2")
-    expect(req).to receive(:run_http_post!).with(prod_uri).and_raise(SocketError)
+    expect(req).to receive(:run_http_post!).with(prod_uri).and_raise(PayboxDirect::ServerUnavailableError)
     expect(req).to receive(:run_http_post!).with(prod_fallback_uri) {
       OpenStruct.new({
         code: "200",
@@ -102,8 +102,8 @@ RSpec.describe PayboxDirect::Request do
     prod_fallback_uri = URI(PayboxDirect::PROD_FALLBACK_URL)
 
     req = PayboxDirect::Request.new("VAR1" => "VAL1", "VAR2" => "VAL2")
-    expect(req).to receive(:run_http_post!).with(prod_uri).and_raise(SocketError)
-    expect(req).to receive(:run_http_post!).with(prod_fallback_uri).and_raise(SocketError)
+    expect(req).to receive(:run_http_post!).with(prod_uri).and_raise(PayboxDirect::ServerUnavailableError)
+    expect(req).to receive(:run_http_post!).with(prod_fallback_uri).and_raise(PayboxDirect::ServerUnavailableError)
     expect {
       req.execute!
     }.to raise_error(PayboxDirect::ServerUnavailableError)

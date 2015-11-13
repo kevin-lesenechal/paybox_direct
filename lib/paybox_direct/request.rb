@@ -44,13 +44,9 @@ class PayboxDirect::Request
   def execute!
     use_alt = false
     begin
-      begin
-        prod_url = use_alt ? PayboxDirect::PROD_FALLBACK_URL : PayboxDirect::PROD_URL
-        uri = URI(PayboxDirect.config.is_prod ? prod_url : PayboxDirect::DEV_URL)
-        resp = run_http_post!(uri)
-      rescue
-        raise PayboxDirect::ServerUnavailableError
-      end
+      prod_url = use_alt ? PayboxDirect::PROD_FALLBACK_URL : PayboxDirect::PROD_URL
+      uri = URI(PayboxDirect.config.is_prod ? prod_url : PayboxDirect::DEV_URL)
+      resp = run_http_post!(uri)
       raise PayboxDirect::ServerUnavailableError if resp.code != "200"
       @fields = Rack::Utils.parse_query(resp.body)
       if !@fields.has_key?("CODEREPONSE") or @fields["CODEREPONSE"] == "00001"
@@ -97,7 +93,11 @@ private
     http = self.class.http_connection(uri)
     @post_request = Net::HTTP::Post.new(uri.request_uri)
     @post_request.set_form_data(@vars)
-    @http_resp = http.request(@post_request)
+    begin
+      @http_resp = http.request(@post_request)
+    rescue
+      raise PayboxDirect::ServerUnavailableError
+    end
     @@request_callbacks.each{ |proc| proc.call(self) }
     return @http_resp
   end
