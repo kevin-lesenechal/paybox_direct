@@ -6,8 +6,14 @@
 require 'rack'
 
 class PayboxDirect::Request
-  attr_reader   :vars, :post_request, :fields
+  attr_reader   :vars, :post_request, :fields, :http_resp
   attr_accessor :response
+
+  @@request_callbacks = []
+
+  def self.on_request(&block)
+    @@request_callbacks << block
+  end
 
   def initialize(vars)
     defaults = {
@@ -91,7 +97,8 @@ private
     http = self.class.http_connection(uri)
     @post_request = Net::HTTP::Post.new(uri.request_uri)
     @post_request.set_form_data(@vars)
-    resp = http.request(@post_request)
-    return resp
+    @http_resp = http.request(@post_request)
+    @@request_callbacks.each{ |proc| proc.call(self) }
+    return @http_resp
   end
 end

@@ -47,6 +47,20 @@ RSpec.describe PayboxDirect::Request do
     expect(req.error_comment).to eq "My error description"
   end
 
+  it "calls request callbacks" do
+    expect_any_instance_of(Net::HTTP).to receive(:request){
+      OpenStruct.new({
+        code: "200",
+        body: "CODEREPONSE=00000&COMMENTAIRE=OK"
+      })
+    }
+    cb = proc {}
+    req = PayboxDirect::Request.new("VAR1" => "VAL1", "VAR2" => "VAL2")
+    PayboxDirect::Request.on_request &cb
+    expect(cb).to receive(:call).with(req)
+    req.execute!
+  end
+
   it "should raise ServerUnavailable in dev" do
     was_prod = PayboxDirect.config.is_prod
     PayboxDirect.config.is_prod = false
