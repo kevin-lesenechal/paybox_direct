@@ -7,9 +7,9 @@ require 'ostruct'
 require 'net/http'
 
 module PayboxDirect
-  DEV_URL           = 'https://preprod-ppps.paybox.com/PPPS.php'
-  PROD_URL          = 'https://ppps.paybox.com/PPPS.php'
-  PROD_FALLBACK_URL = 'https://ppps1.paybox.com/PPPS.php'
+  DEV_URL           = URI("https://preprod-ppps.paybox.com/PPPS.php")
+  PROD_URL          = URI("https://ppps.paybox.com/PPPS.php")
+  PROD_FALLBACK_URL = URI("https://ppps1.paybox.com/PPPS.php")
 
   CURRENCIES = {
     AUD: 36,

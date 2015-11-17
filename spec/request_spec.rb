@@ -61,10 +61,19 @@ RSpec.describe PayboxDirect::Request do
     req.execute!
   end
 
+  it "#uri" do
+    PayboxDirect.config.is_prod = true
+    expect(PayboxDirect::Request.uri(false)).to eq PayboxDirect::PROD_URL
+    expect(PayboxDirect::Request.uri(true)).to eq PayboxDirect::PROD_FALLBACK_URL
+    PayboxDirect.config.is_prod = false
+    expect(PayboxDirect::Request.uri(false)).to eq PayboxDirect::DEV_URL
+    expect(PayboxDirect::Request.uri(true)).to eq PayboxDirect::DEV_URL
+  end
+
   it "should raise ServerUnavailable in dev" do
     was_prod = PayboxDirect.config.is_prod
     PayboxDirect.config.is_prod = false
-    dev_uri = URI(PayboxDirect::DEV_URL)
+    dev_uri = PayboxDirect::DEV_URL
 
     req = PayboxDirect::Request.new("VAR1" => "VAL1", "VAR2" => "VAL2")
     expect_any_instance_of(Net::HTTP).to receive(:request).and_raise(SocketError)
@@ -78,8 +87,8 @@ RSpec.describe PayboxDirect::Request do
   it "should fallback on alt URL in prod" do
     was_prod = PayboxDirect.config.is_prod
     PayboxDirect.config.is_prod = true
-    prod_uri = URI(PayboxDirect::PROD_URL)
-    prod_fallback_uri = URI(PayboxDirect::PROD_FALLBACK_URL)
+    prod_uri = PayboxDirect::PROD_URL
+    prod_fallback_uri = PayboxDirect::PROD_FALLBACK_URL
 
     req = PayboxDirect::Request.new("VAR1" => "VAL1", "VAR2" => "VAL2")
     expect(req).to receive(:run_http_post!).with(prod_uri).and_raise(PayboxDirect::ServerUnavailableError)
@@ -98,8 +107,8 @@ RSpec.describe PayboxDirect::Request do
   it "should raise ServerUnavailable in prod" do
     was_prod = PayboxDirect.config.is_prod
     PayboxDirect.config.is_prod = true
-    prod_uri = URI(PayboxDirect::PROD_URL)
-    prod_fallback_uri = URI(PayboxDirect::PROD_FALLBACK_URL)
+    prod_uri = PayboxDirect::PROD_URL
+    prod_fallback_uri = PayboxDirect::PROD_FALLBACK_URL
 
     req = PayboxDirect::Request.new("VAR1" => "VAL1", "VAR2" => "VAL2")
     expect(req).to receive(:run_http_post!).with(prod_uri).and_raise(PayboxDirect::ServerUnavailableError)

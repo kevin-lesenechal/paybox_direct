@@ -44,9 +44,7 @@ class PayboxDirect::Request
   def execute!
     use_alt = false
     begin
-      prod_url = use_alt ? PayboxDirect::PROD_FALLBACK_URL : PayboxDirect::PROD_URL
-      uri = URI(PayboxDirect.config.is_prod ? prod_url : PayboxDirect::DEV_URL)
-      resp = run_http_post!(uri)
+      resp = run_http_post!(self.class.uri(use_alt))
       raise PayboxDirect::ServerUnavailableError if resp.code != "200"
       @fields = Rack::Utils.parse_query(resp.body)
       if !@fields.has_key?("CODEREPONSE") or @fields["CODEREPONSE"] == "00001"
@@ -78,6 +76,11 @@ class PayboxDirect::Request
   def error_comment
     raise "Not executed yet" if @fields.nil?
     return @fields["COMMENTAIRE"]
+  end
+
+  def self.uri(alt = false)
+    prod_url = alt ? PayboxDirect::PROD_FALLBACK_URL : PayboxDirect::PROD_URL
+    return PayboxDirect.config.is_prod ? prod_url : PayboxDirect::DEV_URL
   end
 
   def self.http_connection(uri)
