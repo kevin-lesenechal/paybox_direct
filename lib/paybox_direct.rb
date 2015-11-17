@@ -51,6 +51,7 @@ module PayboxDirect
   # * cc_cvv:     The credit card CVV, e.g. "123"
   # * subscriber: (optional) A subscriber ID
   # * debit:      (Bool) if true, will debit (default false)
+  # * connection: (optional) A specific Net::HTTP connection
   #
   # If a subscriber ID is provided:
   # * and `wallet` is provided, will execute a #51 operation (#53 if debit);
@@ -73,7 +74,8 @@ module PayboxDirect
                      cc_expire:,
                      cc_cvv:,
                      subscriber: nil,
-                     debit: false)
+                     debit: false,
+                     connection: nil)
     raise ArgumentError, "amount: Expecting Numeric" unless amount.is_a? Numeric
     raise ArgumentError, "currency: Not supported" unless CURRENCIES.has_key? currency
     raise ArgumentError, "cc_expire: Expecting Date" unless cc_expire.is_a? Date
@@ -105,6 +107,7 @@ module PayboxDirect
       vars["REFABONNE"] = @@config.ref_prefix + subscriber
     end
     req = Request.new(vars)
+    req.http_connection = connection
     req.execute!
 
     if req.failed?
@@ -146,6 +149,7 @@ module PayboxDirect
   # * currency:       The currency code, e.g. :EUR
   # * request_id:     The Paybox request ID (NUMAPPEL)
   # * transaction_id: The Paybox transaction ID (NUMTRANS)
+  # * connection:     (optional) A specific Net::HTTP connection
   #
   # This will execute a #2 operation.
   #
@@ -158,7 +162,8 @@ module PayboxDirect
   def self.debit_authorization(amount:,
                                currency:,
                                request_id:,
-                               transaction_id:)
+                               transaction_id:,
+                               connection: nil)
     raise ArgumentError, "amount: Expecting Numeric" unless amount.is_a? Numeric
     raise ArgumentError, "currency: Not supported" unless CURRENCIES.has_key? currency
     raise ArgumentError, "request_id: Expecting Fixnum" unless request_id.is_a? Fixnum
@@ -171,6 +176,7 @@ module PayboxDirect
       "NUMAPPEL" => request_id.to_s.rjust(10, "0"),
       "NUMTRANS" => transaction_id.to_s.rjust(10, "0")
     })
+    req.http_connection = connection
     req.execute!
 
     if req.failed?
@@ -191,6 +197,7 @@ module PayboxDirect
   # * subscriber: (optional) A subscriber ID
   # * request_id:     The request ID (NUMAPPEL)
   # * transaction_id: The transaction ID (NUMTRANS)
+  # * connection: (optional) A specific Net::HTTP connection
   #
   # This will execute a #55 operation if a subscriber is specified, otherwise
   # a #5 operation.
@@ -209,7 +216,8 @@ module PayboxDirect
                   cc_cvv:,
                   subscriber: nil,
                   request_id:,
-                  transaction_id:)
+                  transaction_id:,
+                  connection: nil)
     raise ArgumentError, "amount: Expecting Numeric" unless amount.is_a? Numeric
     raise ArgumentError, "currency: Not supported" unless CURRENCIES.has_key? currency
     raise ArgumentError, "cc_expire: Expecting Date" unless cc_expire.is_a? Date
@@ -240,6 +248,7 @@ module PayboxDirect
       vars["REFABONNE"] = @@config.ref_prefix + subscriber
     end
     req = Request.new(vars)
+    req.http_connection = connection
     req.execute!
 
     if req.failed?
@@ -255,6 +264,7 @@ module PayboxDirect
   # * currency:       The currency code, e.g. :EUR
   # * request_id:     The request ID (NUMAPPEL)
   # * transaction_id: The transaction ID (NUMTRANS)
+  # * connection:     (optional) A specific Net::HTTP connection
   #
   # This will execute a #14 operation.
   #
@@ -267,7 +277,8 @@ module PayboxDirect
   def self.refund(amount:,
                   currency:,
                   request_id:,
-                  transaction_id:)
+                  transaction_id:,
+                  connection: nil)
     raise ArgumentError, "amount: Expecting Numeric" unless amount.is_a? Numeric
     raise ArgumentError, "currency: Not supported" unless CURRENCIES.has_key? currency
     raise ArgumentError, "request_id: Expecting Numeric" unless request_id.is_a? Numeric
@@ -280,6 +291,7 @@ module PayboxDirect
       "NUMAPPEL" => request_id.to_s.rjust(10, "0"),
       "NUMTRANS" => transaction_id.to_s.rjust(10, "0")
     })
+    req.http_connection = connection
     req.execute!
 
     if req.failed?
@@ -299,6 +311,7 @@ module PayboxDirect
   # * cc_expire:  The credit card expiration date, e.g. Date.new(2015, 10, 1)
   # * cc_cvv:     The credit card CVV, e.g. "123"
   # * subscriber: (optional) A subscriber ID
+  # * connection: (optional) A specific Net::HTTP connection
   #
   # This will execute a #54 operation if a subscriber is specified, otherwise
   # a #4 operation.
@@ -316,7 +329,8 @@ module PayboxDirect
                   wallet: nil,
                   cc_expire:,
                   cc_cvv:,
-                  subscriber: nil)
+                  subscriber: nil,
+                  connection: nil)
     raise ArgumentError, "amount: Expecting Numeric" unless amount.is_a? Numeric
     raise ArgumentError, "currency: Not supported" unless CURRENCIES.has_key? currency
     raise ArgumentError, "cc_expire: Expecting Date" unless cc_expire.is_a? Date
@@ -344,6 +358,7 @@ module PayboxDirect
       vars["REFABONNE"] = @@config.ref_prefix + subscriber
     end
     req = Request.new(vars)
+    req.http_connection = connection
     req.execute!
 
     if req.failed?
