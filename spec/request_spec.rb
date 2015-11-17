@@ -70,6 +70,19 @@ RSpec.describe PayboxDirect::Request do
     expect(PayboxDirect::Request.uri(true)).to eq PayboxDirect::DEV_URL
   end
 
+  it "accepts a specific connection" do
+    http = PayboxDirect::Request.http_connection(PayboxDirect::Request.uri)
+    req = PayboxDirect::Request.new("VAR1" => "VAL1", "VAR2" => "VAL2")
+    req.http_connection = http
+    expect(http).to receive(:request) do
+      OpenStruct.new({
+        code: "200",
+        body: "CODEREPONSE=00000&COMMENTAIRE=OK"
+      })
+    end
+    req.execute!
+  end
+
   it "should raise ServerUnavailable in dev" do
     was_prod = PayboxDirect.config.is_prod
     PayboxDirect.config.is_prod = false

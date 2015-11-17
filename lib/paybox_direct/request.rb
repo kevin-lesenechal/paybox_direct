@@ -7,7 +7,7 @@ require 'rack'
 
 class PayboxDirect::Request
   attr_reader   :vars, :post_request, :fields, :http_resp
-  attr_accessor :response
+  attr_accessor :response, :http_connection
 
   @@request_callbacks = []
 
@@ -15,7 +15,7 @@ class PayboxDirect::Request
     @@request_callbacks << block
   end
 
-  def initialize(vars)
+  def initialize(vars, http_conn = nil)
     defaults = {
       "VERSION"     => PayboxDirect.config.version.to_s.rjust(5, "0"),
       "SITE"        => PayboxDirect.config.site.to_s.rjust(7, "0"),
@@ -34,6 +34,7 @@ class PayboxDirect::Request
 
     @post_request = nil
     @fields = nil
+    @http_connection = http_conn
     @response = {}
   end
 
@@ -84,7 +85,6 @@ class PayboxDirect::Request
   end
 
   def self.http_connection(uri)
-    # We may want to execute multiple requests on a single HTTP connection in the future.
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = true
     return http
@@ -93,7 +93,7 @@ class PayboxDirect::Request
 private
 
   def run_http_post!(uri)
-    http = self.class.http_connection(uri)
+    http = @http_connection || self.class.http_connection(uri)
     @post_request = Net::HTTP::Post.new(uri.request_uri)
     @post_request.set_form_data(@vars)
     begin
