@@ -12,15 +12,15 @@ module PayboxDirect
   PROD_FALLBACK_URL = 'https://ppps1.paybox.com/PPPS.php'
 
   CURRENCIES = {
-    :AUD => 36,
-    :CAD => 124,
-    :CHF => 756,
-    :DKK => 208,
-    :EUR => 978,
-    :GBP => 826,
-    :HKD => 344,
-    :JPY => 392,
-    :USD => 840
+    AUD: 36,
+    CAD: 124,
+    CHF: 756,
+    DKK: 208,
+    EUR: 978,
+    GBP: 826,
+    HKD: 344,
+    JPY: 392,
+    USD: 840
   }
 
   @@config = OpenStruct.new({
