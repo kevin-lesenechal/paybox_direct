@@ -17,6 +17,7 @@ class PayboxDirect::Request
 
   def initialize(vars, http_conn = nil)
     defaults = {
+      "URL_ENCODE"  => "O",
       "VERSION"     => PayboxDirect.config.version.to_s.rjust(5, "0"),
       "SITE"        => PayboxDirect.config.site.to_s.rjust(7, "0"),
       "RANG"        => PayboxDirect.config.rank.to_s.rjust(2, "0"),
