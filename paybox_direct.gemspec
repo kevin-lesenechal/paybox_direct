@@ -7,13 +7,13 @@ require 'rake'
 
 Gem::Specification.new do |s|
   s.name     = "paybox_direct"
-  s.version  = "0.2.4"
+  s.version  = "0.2.5"
   s.license  = "BSD-3-Clause"
   s.summary  = "An API to Paybox Direct and Paybox Direct Plus"
   s.author   = "Kévin Lesénéchal"
   s.email    = "kevin.lesenechal@gmail.com"
   s.homepage = "https://github.com/kevin-lesenechal/paybox_direct"
   s.files    = FileList["lib/**/*", "[A-Z]*", "spec/*"].to_a
-  s.add_dependency "rake", "~> 10.0"
-  s.add_development_dependency "rspec", "~> 3.0"
+  s.add_dependency "rake", ">= 10.0"
+  s.add_development_dependency "rspec", ">= 3.0"
 end
