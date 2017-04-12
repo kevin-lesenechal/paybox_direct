@@ -147,6 +147,7 @@ module PayboxDirect
   # == Options:
   # * amount:         The decimal amount, e.g. 49.9 for €49.90 (or other currency)
   # * currency:       The currency code, e.g. :EUR
+  # * ref:            The application reference for this authorization
   # * request_id:     The Paybox request ID (NUMAPPEL)
   # * transaction_id: The Paybox transaction ID (NUMTRANS)
   # * connection:     (optional) A specific Net::HTTP connection
@@ -161,6 +162,7 @@ module PayboxDirect
   # * PayboxDirect::ServerUnavailableError, if Paybox server is unavailable
   def self.debit_authorization(amount:,
                                currency:,
+                               ref:,
                                request_id:,
                                transaction_id:,
                                connection: nil)
@@ -170,11 +172,12 @@ module PayboxDirect
     raise ArgumentError, "transaction_id: Expecting Fixnum" unless transaction_id.is_a? Fixnum
 
     req = Request.new({
-      "TYPE"     => "00002",
-      "MONTANT"  => (amount.round(2) * 100).round.to_s.rjust(10, "0"),
-      "DEVISE"   => CURRENCIES[currency].to_s.rjust(3, "0"),
-      "NUMAPPEL" => request_id.to_s.rjust(10, "0"),
-      "NUMTRANS" => transaction_id.to_s.rjust(10, "0")
+      "TYPE"      => "00002",
+      "MONTANT"   => (amount.round(2) * 100).round.to_s.rjust(10, "0"),
+      "DEVISE"    => CURRENCIES[currency].to_s.rjust(3, "0"),
+      "REFERENCE" => @@config.ref_prefix + ref,
+      "NUMAPPEL"  => request_id.to_s.rjust(10, "0"),
+      "NUMTRANS"  => transaction_id.to_s.rjust(10, "0")
     })
     req.http_connection = connection
     req.execute!
