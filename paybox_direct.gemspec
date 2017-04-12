@@ -7,7 +7,7 @@ require 'rake'
 
 Gem::Specification.new do |s|
   s.name     = "paybox_direct"
-  s.version  = "0.2.6"
+  s.version  = "0.2.7"
   s.license  = "BSD-3-Clause"
   s.summary  = "An API to Paybox Direct and Paybox Direct Plus"
   s.author   = "Kévin Lesénéchal"
