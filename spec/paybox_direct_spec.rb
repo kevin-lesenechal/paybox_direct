@@ -192,6 +192,7 @@ RSpec.describe PayboxDirect do
       expect(PayboxDirect).to receive(:debit_authorization).with(
         amount:         50.3,
         currency:       :EUR,
+        ref:            "debit_new_subscriber",
         request_id:     DO_CALLS ? be_a(Fixnum) : 111111,
         transaction_id: DO_CALLS ? be_a(Fixnum) : 2222222
       ).and_call_original
@@ -302,6 +303,7 @@ RSpec.describe PayboxDirect do
       req = PayboxDirect.debit_authorization(
         amount:         18.20,
         currency:       :EUR,
+        ref:            "auth_to_debit",
         request_id:     req_id,
         transaction_id: trans_id
       )
@@ -364,6 +366,7 @@ RSpec.describe PayboxDirect do
         PayboxDirect.debit_authorization(
           amount:         18.20,
           currency:       :EUR,
+          ref:            "test_ref",
           request_id:     111111,
           transaction_id: 2222222
         )

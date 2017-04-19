@@ -32,7 +32,8 @@ RSpec.describe PayboxDirect::Request do
       "ACTIVITE"    => "024",
       "ACQUEREUR"   => "ems",
       "VAR1"        => "VAL1",
-      "VAR2"        => "VAL2"
+      "VAR2"        => "VAL2",
+      "URL_ENCODE"  => "O"
     })
   end
 

@@ -126,6 +126,7 @@ module PayboxDirect
         debit_authorization(
           amount:         amount,
           currency:       currency,
+          ref:            ref,
           request_id:     req.request_id,
           transaction_id: req.response[:transaction_id]
         )
