@@ -95,11 +95,11 @@ class PayboxDirect::Request
 private
 
   def run_http_post!(uri)
-    http = @http_connection || self.class.http_connection(uri)
+    @http_connection ||= self.class.http_connection(uri)
     @post_request = Net::HTTP::Post.new(uri.request_uri)
     @post_request.set_form_data(@vars)
     begin
-      @http_resp = http.request(@post_request)
+      @http_resp = @http_connection.request(@post_request)
     rescue
       raise PayboxDirect::ServerUnavailableError
     end
